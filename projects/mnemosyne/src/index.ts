@@ -22,7 +22,11 @@ async function initServer(): Promise<FastifyInstance> {
   return server;
 }
 
-async function setupRoutes(server: FastifyInstance): Promise<void> {
+async function setupRoutes(server: FastifyInstance, files: string[]): Promise<void> {
+  server.get("/files", async () => {
+    return files;
+  });
+
   server.post("/files", async (req) => {
     try {
       const data = await req.file();
@@ -36,6 +40,7 @@ async function setupRoutes(server: FastifyInstance): Promise<void> {
           path.join(UPLOADS_DIR, data.mimetype.includes("image") ? "photos" : "videos", data.filename)
         )
       );
+      files.push(data.filename);
       return data.filename;
     } catch (err) {
       console.error(err);
@@ -58,13 +63,16 @@ const start = async () => {
     if (!fs.existsSync(UPLOADS_DIR)) {
       throw new Error(`directory ${UPLOADS_DIR} does not exist, aborting...`);
     }
+    const files: string[] = [];
     for (const dir of ["photos", "videos"]) {
       const fullPath = path.join(UPLOADS_DIR, dir);
       if (!fs.existsSync(fullPath)) {
         fs.mkdirSync(fullPath);
+      } else {
+        files.push(...fs.readdirSync(fullPath));
       }
     }
-    await setupRoutes(server);
+    await setupRoutes(server, files);
     await server.listen({ port: PORT });
     console.log(`Server listening on port ${PORT}`);
   } catch (err: unknown) {
