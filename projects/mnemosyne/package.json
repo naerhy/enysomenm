@@ -8,6 +8,7 @@
   "description": "",
   "devDependencies": {
     "@types/node": "^20.12.8",
+    "prettier": "^3.2.5",
     "typescript": "^5.4.5"
   },
   "keywords": [],
@@ -16,6 +17,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
+    "format": "prettier . --write",
     "start": "node dist/index.js"
   },
   "version": "1.0.0"
