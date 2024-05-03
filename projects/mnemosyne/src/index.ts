@@ -2,6 +2,7 @@ import fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import fs from "node:fs";
+// import { unlink } from "node:fs/promises";
 import stream from "node:stream/promises";
 import path from "node:path";
 
@@ -31,30 +32,26 @@ async function setupRoutes(server: FastifyInstance, files: string[]): Promise<vo
     try {
       const data = await req.file();
       // TODO: validate file + mimetype + ...
-      if (!data || !isValidMimeType(data.mimetype)) {
+      if (!data || !validMimeTypes.includes(data.mimetype)) {
         throw new Error("Invalid mimetype");
       }
+      const dir = data.mimetype.includes("image") ? "photos" : "videos";
       await stream.pipeline(
         data.file,
-        fs.createWriteStream(
-          path.join(UPLOADS_DIR, data.mimetype.includes("image") ? "photos" : "videos", data.filename)
-        )
+        fs.createWriteStream(path.join(UPLOADS_DIR, dir, data.filename))
       );
-      files.push(data.filename);
+      files.push(path.join(dir, data.filename));
       return data.filename;
     } catch (err) {
       console.error(err);
     }
   });
-}
 
-function isValidMimeType(mimetype: string): boolean {
-  for (const v of validMimeTypes) {
-    if (mimetype === v) {
-      return true;
-    }
-  }
-  return false;
+  /*
+  server.delete("/files/:filename", async (req, rep) => {
+    await unlink(path.join(
+  });
+  */
 }
 
 const start = async () => {
@@ -69,7 +66,7 @@ const start = async () => {
       if (!fs.existsSync(fullPath)) {
         fs.mkdirSync(fullPath);
       } else {
-        files.push(...fs.readdirSync(fullPath));
+        files.push(...fs.readdirSync(fullPath).map((file) => path.join(dir, file)));
       }
     }
     await setupRoutes(server, files);
