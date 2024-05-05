@@ -1,11 +1,11 @@
-import { DataSource } from "typeorm";
+import { DataSource, type Repository } from "typeorm";
 import { FileEntity } from "./entity";
 import fastifyPlugin from "fastify-plugin";
 import type { FastifyPluginAsync } from "fastify";
 
 declare module "fastify" {
   interface FastifyInstance {
-    dataSource: DataSource;
+    filesRepository: Repository<FileEntity>;
   }
 }
 
@@ -17,7 +17,7 @@ const initDb: FastifyPluginAsync = async (server) => {
     synchronize: true // TODO: remove for production?
   });
   await dataSource.initialize();
-  server.decorate("dataSource", dataSource);
+  server.decorate("filesRepository", dataSource.getRepository(FileEntity));
 };
 
 export default fastifyPlugin(initDb);

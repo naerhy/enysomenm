@@ -10,7 +10,7 @@ const validMimeTypes = ["image/jpeg", "image/png", "video/mp4"];
 
 const routes: FastifyPluginAsync = async (server) => {
   server.get("/files", async () => {
-    const files = await server.dataSource.manager.find(FileEntity);
+    const files = await server.filesRepository.find();
     return files;
   });
 
@@ -30,7 +30,7 @@ const routes: FastifyPluginAsync = async (server) => {
       file.name = data.filename;
       file.url = path.join(dir, data.filename);
       file.people = "";
-      await server.dataSource.manager.save(file);
+      await server.filesRepository.save(file);
       console.log("New media has been saved to database");
       return data.filename;
     } catch (err) {
@@ -39,11 +39,11 @@ const routes: FastifyPluginAsync = async (server) => {
   });
 
   server.delete<{ Params: { id: number } }>("/files/:id", async (req) => {
-    const file = await server.dataSource.manager.findOneBy(FileEntity, { id: req.params.id });
+    const file = await server.filesRepository.findOneBy({ id: req.params.id });
     if (file === null) {
       throw new Error("file doesn't exist");
     }
-    await server.dataSource.manager.remove(file);
+    await server.filesRepository.remove(file);
     await unlink(path.join(UPLOADS_DIR, file.url));
   });
 };
