@@ -12,7 +12,7 @@ declare module "fastify" {
 const initDb: FastifyPluginAsync = async (server) => {
   const dataSource = new DataSource({
     type: "sqlite",
-    database: "files.db",
+    database: "files.sqlite",
     entities: [FileEntity],
     synchronize: true // TODO: remove for production?
   });

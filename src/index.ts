@@ -24,7 +24,6 @@ const start = async () => {
     server.register(multipart, { limits: { fileSize: MAX_SIZE } });
     server.register(initDb);
     server.register(routes);
-    // await setupRoutes(server);
     await server.listen({ port: PORT });
     console.log(`Server listening on port ${PORT}`);
   } catch (err: unknown) {

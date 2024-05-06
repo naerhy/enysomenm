@@ -38,6 +38,23 @@ const routes: FastifyPluginAsync = async (server) => {
     }
   });
 
+  server.patch<{
+    Params: { id: number },
+    Body: { newPeople: string[] }
+  }>("/files/:id", async (req) => {
+    const file = await server.filesRepository.findOneBy({ id: req.params.id });
+    if (file === null) {
+      throw new Error("file doesn't exist");
+    }
+    if (req.body.newPeople.length === 0) {
+      file.people = "";
+    } else {
+      file.people = req.body.newPeople.join(",");
+    }
+    await server.filesRepository.save(file);
+    return file;
+  });
+
   server.delete<{ Params: { id: number } }>("/files/:id", async (req) => {
     const file = await server.filesRepository.findOneBy({ id: req.params.id });
     if (file === null) {
