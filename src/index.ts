@@ -13,11 +13,9 @@ const start = async () => {
     if (!fs.existsSync(UPLOADS_DIR)) {
       throw new Error(`directory ${UPLOADS_DIR} does not exist, aborting...`);
     }
-    for (const dir of ["photos", "videos"]) {
-      const fullPath = path.join(UPLOADS_DIR, dir);
-      if (!fs.existsSync(fullPath)) {
-        fs.mkdirSync(fullPath);
-      }
+    const fullPath = path.join(UPLOADS_DIR, "photos");
+    if (!fs.existsSync(fullPath)) {
+      fs.mkdirSync(fullPath);
     }
     const server = fastify({ bodyLimit: MAX_SIZE });
     server.register(cors);
@@ -25,7 +23,7 @@ const start = async () => {
     server.register(initDb);
     server.register(routes);
     await server.listen({ port: PORT });
-    console.log(`Server listening on port ${PORT}`);
+    console.log(`Server listening on port ${PORT}...`);
   } catch (err: unknown) {
     console.error(err instanceof Error ? err.message : "unexpected error");
     process.exit(1);

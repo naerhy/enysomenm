@@ -2,5 +2,5 @@ dist
 node_modules
 static
 
-files.sqlite
+photos.sqlite
 requests.http
