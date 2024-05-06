@@ -21,7 +21,7 @@ const start = async () => {
     server.register(cors);
     server.register(multipart, { limits: { fileSize: MAX_SIZE } });
     server.register(initDb);
-    server.register(routes);
+    server.register(routes, { prefix: "/photos" });
     await server.listen({ port: PORT });
     console.log(`Server listening on port ${PORT}...`);
   } catch (err: unknown) {

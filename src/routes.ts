@@ -9,12 +9,12 @@ import { UPLOADS_DIR } from "./constants";
 const validMimeTypes = ["image/jpeg", "image/png"];
 
 const routes: FastifyPluginAsync = async (server) => {
-  server.get("/photos", async () => {
+  server.get("/", async () => {
     const photos = await server.photosRepository.find();
     return photos;
   });
 
-  server.post("/photos", async (req) => {
+  server.post("/", async (req) => {
     try {
       const data = await req.file();
       // TODO: validate file + mimetype + ...
@@ -40,7 +40,7 @@ const routes: FastifyPluginAsync = async (server) => {
   server.patch<{
     Params: { id: number },
     Body: { newPeople: string[] }
-  }>("/photos/:id", async (req) => {
+  }>("/:id", async (req) => {
     const photo = await server.photosRepository.findOneBy({ id: req.params.id });
     if (photo === null) {
       throw new Error("Photo doesn't exist.");
@@ -54,7 +54,7 @@ const routes: FastifyPluginAsync = async (server) => {
     return photo;
   });
 
-  server.delete<{ Params: { id: number } }>("/photos/:id", async (req) => {
+  server.delete<{ Params: { id: number } }>("/:id", async (req) => {
     const photo = await server.photosRepository.findOneBy({ id: req.params.id });
     if (photo === null) {
       throw new Error("file doesn't exist");
