@@ -1,14 +1,15 @@
-import type { FastifyPluginAsync } from "fastify";
 import { PhotoEntity } from "./entity";
 import stream from "node:stream/promises";
 import path from "node:path";
 import fs from "node:fs";
 import { unlink } from "node:fs/promises";
 import { UPLOADS_DIR } from "./constants";
+import { Type } from "@sinclair/typebox";
+import { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 
 const validMimeTypes = ["image/jpeg", "image/png"];
 
-const routes: FastifyPluginAsync = async (server) => {
+const routes: FastifyPluginAsyncTypebox = async (server) => {
   server.get("/", async () => {
     const photos = await server.photosRepository.find();
     return photos;
@@ -37,10 +38,12 @@ const routes: FastifyPluginAsync = async (server) => {
     }
   });
 
-  server.patch<{
-    Params: { id: number },
-    Body: { newPeople: string[] }
-  }>("/:id", async (req) => {
+  server.patch("/:id", {
+    schema: {
+      params: Type.Object({ id: Type.Number() }),
+      body: Type.Object({ newPeople: Type.Array(Type.String()) })
+    }
+  }, async (req) => {
     const photo = await server.photosRepository.findOneBy({ id: req.params.id });
     if (photo === null) {
       throw new Error("Photo doesn't exist.");
@@ -54,7 +57,11 @@ const routes: FastifyPluginAsync = async (server) => {
     return photo;
   });
 
-  server.delete<{ Params: { id: number } }>("/:id", async (req) => {
+  server.delete("/:id", {
+    schema: {
+      params: Type.Object({ id: Type.Number() })
+    }
+  }, async (req) => {
     const photo = await server.photosRepository.findOneBy({ id: req.params.id });
     if (photo === null) {
       throw new Error("file doesn't exist");
