@@ -22,10 +22,7 @@ const routes: FastifyPluginAsyncTypebox = async (server) => {
       if (!data || !validMimeTypes.includes(data.mimetype)) {
         throw new Error("Invalid mimetype.");
       }
-      await stream.pipeline(
-        data.file,
-        fs.createWriteStream(path.join(UPLOADS_DIR, "photos", data.filename))
-      );
+      await stream.pipeline(data.file, fs.createWriteStream(path.join(UPLOADS_DIR, "photos", data.filename)));
       const photo = new PhotoEntity();
       photo.name = data.filename;
       photo.url = path.join("photos", data.filename);
@@ -38,37 +35,45 @@ const routes: FastifyPluginAsyncTypebox = async (server) => {
     }
   });
 
-  server.patch("/:id", {
-    schema: {
-      params: Type.Object({ id: Type.Number() }),
-      body: Type.Object({ newPeople: Type.Array(Type.String()) })
+  server.patch(
+    "/:id",
+    {
+      schema: {
+        params: Type.Object({ id: Type.Number() }),
+        body: Type.Object({ newPeople: Type.Array(Type.String()) })
+      }
+    },
+    async (req) => {
+      const photo = await server.photosRepository.findOneBy({ id: req.params.id });
+      if (photo === null) {
+        throw new Error("Photo doesn't exist.");
+      }
+      if (req.body.newPeople.length === 0) {
+        photo.people = "";
+      } else {
+        photo.people = req.body.newPeople.join(",");
+      }
+      await server.photosRepository.save(photo);
+      return photo;
     }
-  }, async (req) => {
-    const photo = await server.photosRepository.findOneBy({ id: req.params.id });
-    if (photo === null) {
-      throw new Error("Photo doesn't exist.");
-    }
-    if (req.body.newPeople.length === 0) {
-      photo.people = "";
-    } else {
-      photo.people = req.body.newPeople.join(",");
-    }
-    await server.photosRepository.save(photo);
-    return photo;
-  });
+  );
 
-  server.delete("/:id", {
-    schema: {
-      params: Type.Object({ id: Type.Number() })
+  server.delete(
+    "/:id",
+    {
+      schema: {
+        params: Type.Object({ id: Type.Number() })
+      }
+    },
+    async (req) => {
+      const photo = await server.photosRepository.findOneBy({ id: req.params.id });
+      if (photo === null) {
+        throw new Error("file doesn't exist");
+      }
+      await server.photosRepository.remove(photo);
+      await unlink(path.join(UPLOADS_DIR, photo.url));
     }
-  }, async (req) => {
-    const photo = await server.photosRepository.findOneBy({ id: req.params.id });
-    if (photo === null) {
-      throw new Error("file doesn't exist");
-    }
-    await server.photosRepository.remove(photo);
-    await unlink(path.join(UPLOADS_DIR, photo.url));
-  });
+  );
 };
 
 export default routes;
