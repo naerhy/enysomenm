@@ -1,25 +1,20 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import { authPostSchema } from "../schemas";
+import { type Env, authPostSchema } from "../schemas";
 
-const createAuthRouter = (secret: string, expiration: number, adminPassword: string, userPassword: string) => {
+const createAuthRouter = (env: Env) => {
   const router = express.Router();
 
   router.post("/", (req, res) => {
-    // TODO: make this async?
     try {
       const { password } = authPostSchema.parse(req.body);
-      if (![adminPassword, userPassword].includes(password)) {
+      if (![env.PASSWORD_ADMIN, env.PASSWORD_USER].includes(password)) {
         throw new Error("Password is incorrect");
       }
       jwt.sign(
-        {
-          role: password === adminPassword ? "admin" : "user"
-        },
-        secret,
-        {
-          expiresIn: expiration
-        },
+        { role: password === env.PASSWORD_ADMIN ? "admin" : "user" },
+        env.JWT_SECRET,
+        { expiresIn: 7200 },
         (err, encodedToken) => {
           if (err !== null) {
             res.status(400).json({ statusCode: 400, message: "message" });

@@ -4,16 +4,15 @@ import fs from "node:fs";
 import path from "node:path";
 import createPhotosRouter from "./routers/photos.router";
 import createAuthRouter from "./routers/auth.router";
-import { authMiddleware } from "./middlewares";
+import createMiddlewares from "./middlewares";
+import { Env } from "./schemas";
 
 class App {
-  private readonly port: number;
-  private readonly uploadsDir: string;
+  private readonly env: Env;
   private app: express.Application;
 
-  constructor(port: number, uploadsDir: string) {
-    this.port = port;
-    this.uploadsDir = uploadsDir;
+  constructor(env: Env) {
+    this.env = env;
     this.createDirectories();
     this.app = express();
     this.app.use(express.json());
@@ -21,25 +20,26 @@ class App {
   }
 
   public async init(): Promise<void> {
-    const authRouter = createAuthRouter("secret", 120, "admin", "user");
-    const photosRouter = await createPhotosRouter(this.uploadsDir);
+    const middlewares = createMiddlewares(this.env.JWT_SECRET);
+    const authRouter = createAuthRouter(this.env);
+    const photosRouter = await createPhotosRouter(this.env.UPLOADS_DIR, middlewares.isAdminMiddleware);
     this.app.use("/auth", authRouter);
-    this.app.use("/photos", authMiddleware, photosRouter);
+    this.app.use("/photos", middlewares.authMiddleware, photosRouter);
   }
 
   private createDirectories(): void {
-    if (!fs.existsSync(this.uploadsDir)) {
-      throw new Error(`directory ${this.uploadsDir} does not exist, aborting...`);
+    if (!fs.existsSync(this.env.UPLOADS_DIR)) {
+      throw new Error(`directory ${this.env.UPLOADS_DIR} does not exist, aborting...`);
     }
-    const fullPath = path.join(this.uploadsDir, "photos");
+    const fullPath = path.join(this.env.UPLOADS_DIR, "photos");
     if (!fs.existsSync(fullPath)) {
       fs.mkdirSync(fullPath);
     }
   }
 
   public start(): void {
-    this.app.listen(this.port, () => {
-      console.log(`Server is running on http://localhost:${this.port}`);
+    this.app.listen(this.env.PORT, () => {
+      console.log(`Server is running on http://localhost:${this.env.PORT}`);
     });
   }
 }

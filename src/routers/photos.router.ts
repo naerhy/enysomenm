@@ -1,13 +1,12 @@
-import express from "express";
+import express, { type RequestHandler } from "express";
 import path from "node:path";
 import { unlink } from "node:fs/promises";
 import multer from "multer";
 import { DataSource } from "typeorm";
 import { PhotoEntity } from "../photo.entity";
 import { idSchema, photosPatchSchema } from "../schemas";
-import { isAdminMiddleware } from "../middlewares";
 
-const createPhotosRouter = async (uploadsDir: string) => {
+const createPhotosRouter = async (uploadsDir: string, isAdminMiddleware: RequestHandler) => {
   const dataSource = new DataSource({
     type: "sqlite",
     database: "photos.sqlite",
