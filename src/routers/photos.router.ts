@@ -5,6 +5,7 @@ import multer from "multer";
 import { DataSource } from "typeorm";
 import { PhotoEntity } from "../photo.entity";
 import { idSchema, photosPatchSchema } from "../schemas";
+import { isAdminMiddleware } from "../middlewares";
 
 const createPhotosRouter = async (uploadsDir: string) => {
   const dataSource = new DataSource({
@@ -39,7 +40,7 @@ const createPhotosRouter = async (uploadsDir: string) => {
     }
   });
 
-  router.post("/", multerInstance.single("file"), async (req, res) => {
+  router.post("/", isAdminMiddleware, multerInstance.single("file"), async (req, res) => {
     try {
       if (!req.file) {
         throw new Error("File is undefined");
@@ -56,7 +57,7 @@ const createPhotosRouter = async (uploadsDir: string) => {
     }
   });
 
-  router.patch("/:id", async (req, res) => {
+  router.patch("/:id", isAdminMiddleware, async (req, res) => {
     try {
       const id = idSchema.parse(parseInt(req.params.id));
       const photo = await repository.findOneBy({ id });
@@ -72,7 +73,7 @@ const createPhotosRouter = async (uploadsDir: string) => {
     }
   });
 
-  router.delete("/:id", async (req, res) => {
+  router.delete("/:id", isAdminMiddleware, async (req, res) => {
     try {
       const id = idSchema.parse(parseInt(req.params.id));
       const photo = await repository.findOneBy({ id });

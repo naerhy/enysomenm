@@ -3,6 +3,8 @@ import cors from "cors";
 import fs from "node:fs";
 import path from "node:path";
 import createPhotosRouter from "./routers/photos.router";
+import createAuthRouter from "./routers/auth.router";
+import { authMiddleware } from "./middlewares";
 
 class App {
   private readonly port: number;
@@ -19,8 +21,10 @@ class App {
   }
 
   public async init(): Promise<void> {
+    const authRouter = createAuthRouter("secret", 120, "admin", "user");
     const photosRouter = await createPhotosRouter(this.uploadsDir);
-    this.app.use("/photos", photosRouter);
+    this.app.use("/auth", authRouter);
+    this.app.use("/photos", authMiddleware, photosRouter);
   }
 
   private createDirectories(): void {
@@ -33,7 +37,7 @@ class App {
     }
   }
 
-  start(): void {
+  public start(): void {
     this.app.listen(this.port, () => {
       console.log(`Server is running on http://localhost:${this.port}`);
     });
