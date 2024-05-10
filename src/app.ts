@@ -22,7 +22,7 @@ class App {
   public async init(): Promise<void> {
     const middlewares = createMiddlewares(this.env.JWT_SECRET);
     const authRouter = createAuthRouter(this.env);
-    const photosRouter = await createPhotosRouter(this.env.UPLOADS_DIR, middlewares.isAdminMiddleware);
+    const photosRouter = await createPhotosRouter(this.env, middlewares.isAdminMiddleware);
     this.app.use("/auth", authRouter);
     this.app.use("/photos", middlewares.authMiddleware, photosRouter);
     this.app.use(middlewares.errorMiddleware);

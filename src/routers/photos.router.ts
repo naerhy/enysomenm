@@ -4,9 +4,9 @@ import { unlink } from "node:fs/promises";
 import multer from "multer";
 import { DataSource } from "typeorm";
 import { PhotoEntity } from "../photo.entity";
-import { idSchema, photosPatchSchema } from "../schemas";
+import { type Env, idSchema, photosPatchSchema } from "../schemas";
 
-const createPhotosRouter = async (uploadsDir: string, isAdminMiddleware: RequestHandler) => {
+const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) => {
   const dataSource = new DataSource({
     type: "sqlite",
     database: "photos.sqlite",
@@ -19,10 +19,9 @@ const createPhotosRouter = async (uploadsDir: string, isAdminMiddleware: Request
   const multerInstance = multer({
     storage: multer.diskStorage({
       destination: function (_req, _file, cb) {
-        cb(null, path.join(uploadsDir, "photos"));
+        cb(null, path.join(env.UPLOADS_DIR, "photos"));
       },
       filename: function (_req, file, cb) {
-        console.dir(file);
         cb(null, file.originalname);
       }
     })
@@ -64,9 +63,13 @@ const createPhotosRouter = async (uploadsDir: string, isAdminMiddleware: Request
         throw { statusCode: 400, message: "Not a valid photo id" };
       }
       const { newPeople } = photosPatchSchema.parse(req.body);
-      photo.people = newPeople.length === 0 ? "" : newPeople.join(",");
-      await repository.save(photo);
-      res.json(photo);
+      if (newPeople.length === 0 || newPeople.every((p) => env.PEOPLE.includes(p))) {
+        photo.people = newPeople.length === 0 ? "" : Array.from(new Set(newPeople)).join(",");
+        await repository.save(photo);
+        res.json(photo);
+      } else {
+        throw { statusCode: 400, message: "People names are invalid" };
+      }
     } catch (err) {
       next(err);
     }
@@ -80,7 +83,7 @@ const createPhotosRouter = async (uploadsDir: string, isAdminMiddleware: Request
         throw { statusCode: 400, message: "Not a valid photo id" };
       }
       await repository.remove(photo);
-      await unlink(path.join(uploadsDir, photo.url));
+      await unlink(path.join(env.UPLOADS_DIR, photo.url));
       res.json(photo);
     } catch (err) {
       next(err);
