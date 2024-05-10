@@ -6,6 +6,10 @@ import { DataSource } from "typeorm";
 import { PhotoEntity } from "../photo.entity";
 import { type Env, idSchema, photosPatchSchema } from "../schemas";
 
+const transformPhoto = (photo: PhotoEntity) => {
+  return { ...photo, people: photo.people === "" ? [] : photo.people.split(",") };
+};
+
 const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) => {
   const dataSource = new DataSource({
     type: "sqlite",
@@ -32,7 +36,7 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
   router.get("/", async (_, res, next) => {
     try {
       const photos = await repository.find();
-      res.json(photos);
+      res.json(photos.map((photo) => transformPhoto(photo)));
     } catch (err) {
       next(err);
     }
@@ -49,7 +53,7 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
       photo.people = "";
       await repository.save(photo);
       console.log(`Photo ${photo.name} has been saved to database`);
-      return res.json(photo);
+      return res.json(transformPhoto(photo));
     } catch (err) {
       next(err);
     }
@@ -66,7 +70,7 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
       if (newPeople.length === 0 || newPeople.every((p) => env.PEOPLE.includes(p))) {
         photo.people = newPeople.length === 0 ? "" : Array.from(new Set(newPeople)).join(",");
         await repository.save(photo);
-        res.json(photo);
+        res.json(transformPhoto(photo));
       } else {
         throw { statusCode: 400, message: "People names are invalid" };
       }
