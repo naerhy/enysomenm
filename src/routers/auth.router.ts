@@ -11,18 +11,14 @@ const createAuthRouter = (env: Env) => {
       if (![env.PASSWORD_ADMIN, env.PASSWORD_USER].includes(password)) {
         throw { statusCode: 400, message: "Password is not valid" };
       }
-      jwt.sign(
-        { role: password === env.PASSWORD_ADMIN ? "admin" : "user" },
-        env.JWT_SECRET,
-        { expiresIn: 7200 },
-        (err, encodedToken) => {
-          if (err !== null) {
-            next();
-          } else {
-            res.json({ token: encodedToken });
-          }
+      const role = password === env.PASSWORD_ADMIN ? "admin" : "user";
+      jwt.sign({ sub: role }, env.JWT_SECRET, { expiresIn: 7200 }, (err, encodedToken) => {
+        if (err !== null) {
+          next();
+        } else {
+          res.json({ role, token: encodedToken });
         }
-      );
+      });
     } catch (err: unknown) {
       next(err);
     }
