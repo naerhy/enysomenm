@@ -25,11 +25,12 @@ class App {
     const photosRouter = await createPhotosRouter(this.env.UPLOADS_DIR, middlewares.isAdminMiddleware);
     this.app.use("/auth", authRouter);
     this.app.use("/photos", middlewares.authMiddleware, photosRouter);
+    this.app.use(middlewares.errorMiddleware);
   }
 
   private createDirectories(): void {
     if (!fs.existsSync(this.env.UPLOADS_DIR)) {
-      throw new Error(`directory ${this.env.UPLOADS_DIR} does not exist, aborting...`);
+      throw new Error(`Directory ${this.env.UPLOADS_DIR} does not exist, aborting...`);
     }
     const fullPath = path.join(this.env.UPLOADS_DIR, "photos");
     if (!fs.existsSync(fullPath)) {

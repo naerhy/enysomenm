@@ -1,15 +1,15 @@
-import type { RequestHandler } from "express";
+import type { ErrorRequestHandler, RequestHandler } from "express";
 import jwt from "jsonwebtoken";
 
 const createMiddlewares = (jwtSecret: string) => {
-  const authMiddleware: RequestHandler = (req, res, next) => {
+  const authMiddleware: RequestHandler = (req, _res, next) => {
     const token = req.headers["authorization"]?.split(" ")[1];
     if (token === undefined) {
-      res.status(400).json({ statusCode: 400, message: "message" });
+      next({ statusCode: 401, message: "Authorization header is undefined" });
     } else {
       jwt.verify(token, jwtSecret, (err, decodedToken) => {
         if (err !== null) {
-          res.status(400).json({ statusCode: 400, message: "message" });
+          next({ statusCode: 401, message: "JWT is not valid" });
         } else {
           // @ts-ignore
           req.token = decodedToken;
@@ -19,16 +19,24 @@ const createMiddlewares = (jwtSecret: string) => {
     }
   };
 
-  const isAdminMiddleware: RequestHandler = (req, res, next) => {
+  const isAdminMiddleware: RequestHandler = (req, _res, next) => {
     // @ts-ignore
     if (req.token.role === "user") {
-      res.status(400).json({ statusCode: 400, message: "message" });
+      next({ statusCode: 403, message: "You don't have the permission" });
     } else {
       next();
     }
   };
 
-  return { authMiddleware, isAdminMiddleware };
+  const errorMiddleware: ErrorRequestHandler = (err, _req, res, _next) => {
+    const errObj = {
+      statusCode: err.statusCode || 500,
+      message: err.message || "Internal server error"
+    };
+    res.status(errObj.statusCode).json(errObj);
+  };
+
+  return { authMiddleware, isAdminMiddleware, errorMiddleware };
 };
 
 export default createMiddlewares;

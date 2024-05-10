@@ -30,19 +30,19 @@ const createPhotosRouter = async (uploadsDir: string, isAdminMiddleware: Request
 
   const router = express.Router();
 
-  router.get("/", async (_, res) => {
+  router.get("/", async (_, res, next) => {
     try {
       const photos = await repository.find();
       res.json(photos);
     } catch (err) {
-      res.status(400).json({ statusCode: 400, message: "message" });
+      next(err);
     }
   });
 
-  router.post("/", isAdminMiddleware, multerInstance.single("file"), async (req, res) => {
+  router.post("/", isAdminMiddleware, multerInstance.single("file"), async (req, res, next) => {
     try {
       if (!req.file) {
-        throw new Error("File is undefined");
+        throw { statusCode: 400, message: "File is undefined" };
       }
       const photo = new PhotoEntity();
       photo.name = req.file.filename;
@@ -52,38 +52,38 @@ const createPhotosRouter = async (uploadsDir: string, isAdminMiddleware: Request
       console.log(`Photo ${photo.name} has been saved to database`);
       return res.json(photo);
     } catch (err) {
-      res.status(400).json({ statusCode: 400, message: "message" });
+      next(err);
     }
   });
 
-  router.patch("/:id", isAdminMiddleware, async (req, res) => {
+  router.patch("/:id", isAdminMiddleware, async (req, res, next) => {
     try {
       const id = idSchema.parse(parseInt(req.params.id));
       const photo = await repository.findOneBy({ id });
       if (photo === null) {
-        throw new Error("Id does not exist in database");
+        throw { statusCode: 400, message: "Not a valid photo id" };
       }
       const { newPeople } = photosPatchSchema.parse(req.body);
       photo.people = newPeople.length === 0 ? "" : newPeople.join(",");
       await repository.save(photo);
       res.json(photo);
-    } catch (err: unknown) {
-      res.status(400).json({ statusCode: 400, message: "message" });
+    } catch (err) {
+      next(err);
     }
   });
 
-  router.delete("/:id", isAdminMiddleware, async (req, res) => {
+  router.delete("/:id", isAdminMiddleware, async (req, res, next) => {
     try {
       const id = idSchema.parse(parseInt(req.params.id));
       const photo = await repository.findOneBy({ id });
       if (photo === null) {
-        throw new Error("Id does not exist in database");
+        throw { statusCode: 400, message: "Not a valid photo id" };
       }
       await repository.remove(photo);
       await unlink(path.join(uploadsDir, photo.url));
       res.json(photo);
     } catch (err) {
-      res.status(400).json({ statusCode: 400, message: "message" });
+      next(err);
     }
   });
 

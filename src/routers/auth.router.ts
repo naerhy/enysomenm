@@ -5,11 +5,11 @@ import { type Env, authPostSchema } from "../schemas";
 const createAuthRouter = (env: Env) => {
   const router = express.Router();
 
-  router.post("/", (req, res) => {
+  router.post("/", (req, res, next) => {
     try {
       const { password } = authPostSchema.parse(req.body);
       if (![env.PASSWORD_ADMIN, env.PASSWORD_USER].includes(password)) {
-        throw new Error("Password is incorrect");
+        throw { statusCode: 400, message: "Password is not valid" };
       }
       jwt.sign(
         { role: password === env.PASSWORD_ADMIN ? "admin" : "user" },
@@ -17,14 +17,14 @@ const createAuthRouter = (env: Env) => {
         { expiresIn: 7200 },
         (err, encodedToken) => {
           if (err !== null) {
-            res.status(400).json({ statusCode: 400, message: "message" });
+            next();
           } else {
             res.json({ token: encodedToken });
           }
         }
       );
     } catch (err: unknown) {
-      res.status(400).json({ statusCode: 400, message: "message" });
+      next(err);
     }
   });
 
