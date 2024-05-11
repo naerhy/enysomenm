@@ -11,6 +11,4 @@ RUN npm run build
 
 ENV NODE_ENV production
 
-USER node
-
 CMD ["dumb-init", "node", "dist/index.js"]
