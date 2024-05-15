@@ -28,7 +28,14 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
       filename: function (_req, file, cb) {
         cb(null, file.originalname);
       }
-    })
+    }),
+    fileFilter: async (_req, file, cb) => {
+      if (!["image/jpeg", "image/png"].includes(file.mimetype)) {
+        return cb(null, false);
+      }
+      const existingfile = await repository.findOneBy({ name: file.originalname });
+      cb(null, existingfile === null);
+    }
   });
 
   const router = express.Router();
@@ -45,7 +52,7 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
   router.post("/", isAdminMiddleware, multerInstance.single("file"), async (req, res, next) => {
     try {
       if (!req.file) {
-        throw { statusCode: 400, message: "File is undefined" };
+        throw { statusCode: 400, message: "File is undefined or invalid" };
       }
       const photo = new PhotoEntity();
       photo.name = req.file.filename;
