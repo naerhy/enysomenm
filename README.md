@@ -15,10 +15,11 @@ In order for the server to be properly launched, you have to create an .env file
 ```
 PORT=3000
 JWT_SECRET=secret
+UPLOADS_DIR=static
 PASSWORD_ADMIN=hihihi
 PASSWORD_USER=hahaha
-PEOPLE=Quentin,Magali,Anne
-UPLOADS_DIR=static
+SOURCES=Photographe,WhatsApp,Xialing,Patrick,Photobooth
+SUBJECTS=Quentin,Magali,Anne.D,Camille
 ```
 
 ### Commands
