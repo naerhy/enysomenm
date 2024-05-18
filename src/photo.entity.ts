@@ -12,5 +12,8 @@ export class PhotoEntity {
   url: string;
 
   @Column()
-  people: string;
+  source: string;
+
+  @Column()
+  subjects: string;
 }

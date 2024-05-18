@@ -3,17 +3,25 @@ import { z } from "zod";
 export const envSchema = z.object({
   PORT: z.coerce.number(),
   JWT_SECRET: z.string().min(1),
+  UPLOADS_DIR: z.string().min(1),
   PASSWORD_ADMIN: z.string().min(5),
   PASSWORD_USER: z.string().min(5),
-  PEOPLE: z.string().transform((value, ctx) => {
-    const people = value.split(",");
-    if (people.length === 0 || people.some((p) => p.length === 0)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "People is either empty or contains invalid names" });
+  SOURCES: z.string().transform((sources, ctx) => {
+    const arraySources = sources.split(",");
+    if (arraySources.length === 0 || arraySources.some((s) => s.length === 0)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Sources are invalid" });
       return z.NEVER;
     }
-    return people;
+    return arraySources;
   }),
-  UPLOADS_DIR: z.string().min(1)
+  SUBJECTS: z.string().transform((subjects, ctx) => {
+    const arraySubjects = subjects.split(",");
+    if (arraySubjects.length === 0 || arraySubjects.some((s) => s.length === 0)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Subjects are invalid" });
+      return z.NEVER;
+    }
+    return arraySubjects;
+  })
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -25,5 +33,6 @@ export const authPostSchema = z.object({
 export const idSchema = z.number();
 
 export const photosPatchSchema = z.object({
-  newPeople: z.array(z.string())
+  newSource: z.optional(z.string()),
+  newSubjects: z.optional(z.array(z.string()))
 });

@@ -6,16 +6,12 @@ import { DataSource } from "typeorm";
 import { PhotoEntity } from "../photo.entity";
 import { type Env, idSchema, photosPatchSchema } from "../schemas";
 
-const transformPhoto = (photo: PhotoEntity) => {
-  return { ...photo, people: photo.people === "" ? [] : photo.people.split(",") };
-};
-
 const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) => {
   const dataSource = new DataSource({
     type: "sqlite",
     database: "photos.sqlite",
     entities: [PhotoEntity],
-    synchronize: true // TODO: remove in production?
+    synchronize: true
   });
   await dataSource.initialize();
   const repository = dataSource.getRepository(PhotoEntity);
@@ -38,12 +34,16 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
     }
   });
 
+  const transformPhotoSubjects = (photo: PhotoEntity) => {
+    return { ...photo, subjects: photo.subjects === "" ? [] : photo.subjects.split(",") };
+  };
+
   const router = express.Router();
 
   router.get("/", async (_, res, next) => {
     try {
       const photos = await repository.find();
-      res.json(photos.map((photo) => transformPhoto(photo)));
+      res.json(photos.map((photo) => transformPhotoSubjects(photo)));
     } catch (err) {
       next(err);
     }
@@ -57,10 +57,11 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
       const photo = new PhotoEntity();
       photo.name = req.file.filename;
       photo.url = path.join("photos", photo.name);
-      photo.people = "";
+      photo.source = "";
+      photo.subjects = "";
       await repository.save(photo);
       console.log(`Photo ${photo.name} has been saved to database`);
-      return res.json(transformPhoto(photo));
+      return res.json(transformPhotoSubjects(photo));
     } catch (err) {
       next(err);
     }
@@ -73,14 +74,23 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
       if (photo === null) {
         throw { statusCode: 400, message: "Not a valid photo id" };
       }
-      const { newPeople } = photosPatchSchema.parse(req.body);
-      if (newPeople.length === 0 || newPeople.every((p) => env.PEOPLE.includes(p))) {
-        photo.people = newPeople.length === 0 ? "" : Array.from(new Set(newPeople)).join(",");
-        await repository.save(photo);
-        res.json(transformPhoto(photo));
-      } else {
-        throw { statusCode: 400, message: "People names are invalid" };
+      const { newSource, newSubjects } = photosPatchSchema.parse(req.body);
+      if (newSource !== undefined) {
+        if (env.SOURCES.includes(newSource)) {
+          photo.source = newSource;
+        } else {
+          throw { statusCode: 400, message: "Source is invalid" };
+        }
       }
+      if (newSubjects !== undefined) {
+        if (newSubjects.length === 0 || newSubjects.every((s) => env.SUBJECTS.includes(s))) {
+          photo.subjects = newSubjects.length === 0 ? "" : Array.from(new Set(newSubjects)).join(",");
+        } else {
+          throw { statusCode: 400, message: "People names are invalid" };
+        }
+      }
+      await repository.save(photo);
+      res.json(transformPhotoSubjects(photo));
     } catch (err) {
       next(err);
     }
