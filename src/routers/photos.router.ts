@@ -52,7 +52,7 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
   router.post("/", isAdminMiddleware, multerInstance.single("file"), async (req, res, next) => {
     try {
       if (!req.file) {
-        throw { statusCode: 400, message: "File is undefined or invalid" };
+        throw { statusCode: 400, message: "Le fichier n'est pas défini, ou incorrect." };
       }
       const photo = new PhotoEntity();
       photo.name = req.file.filename;
@@ -72,21 +72,21 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
       const id = idSchema.parse(parseInt(req.params.id));
       const photo = await repository.findOneBy({ id });
       if (photo === null) {
-        throw { statusCode: 400, message: "Not a valid photo id" };
+        throw { statusCode: 400, message: "Ceci n'est pas un identifiant de photo valide." };
       }
       const { newSource, newSubjects } = photosPatchSchema.parse(req.body);
       if (newSource !== undefined) {
         if (env.SOURCES.includes(newSource)) {
           photo.source = newSource;
         } else {
-          throw { statusCode: 400, message: "Source is invalid" };
+          throw { statusCode: 400, message: "La source de la photo n'est pas valide." };
         }
       }
       if (newSubjects !== undefined) {
         if (newSubjects.length === 0 || newSubjects.every((s) => env.SUBJECTS.includes(s))) {
           photo.subjects = newSubjects.length === 0 ? "" : Array.from(new Set(newSubjects)).join(",");
         } else {
-          throw { statusCode: 400, message: "People names are invalid" };
+          throw { statusCode: 400, message: "Les sujets de la photo ne sont pas valides." };
         }
       }
       await repository.save(photo);
@@ -101,7 +101,7 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
       const id = idSchema.parse(parseInt(req.params.id));
       const photo = await repository.findOneBy({ id });
       if (photo === null) {
-        throw { statusCode: 400, message: "Not a valid photo id" };
+        throw { statusCode: 400, message: "Ceci n'est pas un identifiant de photo valide." };
       }
       await repository.remove(photo);
       await unlink(path.join(env.UPLOADS_DIR, photo.url));

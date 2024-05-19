@@ -30,7 +30,7 @@ class App {
 
   private createDirectories(): void {
     if (!fs.existsSync(this.env.UPLOADS_DIR)) {
-      throw new Error(`Directory ${this.env.UPLOADS_DIR} does not exist, aborting...`);
+      throw new Error(`Directory ${this.env.UPLOADS_DIR} does not exist`);
     }
     const fullPath = path.join(this.env.UPLOADS_DIR, "photos");
     if (!fs.existsSync(fullPath)) {
@@ -40,7 +40,7 @@ class App {
 
   public start(): void {
     this.app.listen(this.env.PORT, () => {
-      console.log(`Server is running on http://localhost:${this.env.PORT}`);
+      console.log(`Server is running on http://localhost:${this.env.PORT}...`);
     });
   }
 }

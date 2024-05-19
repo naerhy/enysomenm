@@ -9,7 +9,7 @@ export const envSchema = z.object({
   SOURCES: z.string().transform((sources, ctx) => {
     const arraySources = sources.split(",");
     if (arraySources.length === 0 || arraySources.some((s) => s.length === 0)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Sources are invalid" });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Sources from .env are invalid" });
       return z.NEVER;
     }
     return arraySources;
@@ -17,7 +17,7 @@ export const envSchema = z.object({
   SUBJECTS: z.string().transform((subjects, ctx) => {
     const arraySubjects = subjects.split(",");
     if (arraySubjects.length === 0 || arraySubjects.some((s) => s.length === 0)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Subjects are invalid" });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Subjects from .env are invalid" });
       return z.NEVER;
     }
     return arraySubjects;

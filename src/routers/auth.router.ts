@@ -9,7 +9,7 @@ const createAuthRouter = (env: Env) => {
     try {
       const { password } = authPostSchema.parse(req.body);
       if (![env.PASSWORD_ADMIN, env.PASSWORD_USER].includes(password)) {
-        throw { statusCode: 400, message: "Password is not valid" };
+        throw { statusCode: 400, message: "Le mot de passe est incorrect." };
       }
       const role = password === env.PASSWORD_ADMIN ? "admin" : "user";
       jwt.sign({ sub: role }, env.JWT_SECRET, { expiresIn: 7200 }, (err, encodedToken) => {
