@@ -9,8 +9,12 @@ import { ExifDateTime, exiftool } from "exiftool-vendored";
 
 const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) => {
   const dataSource = new DataSource({
-    type: "sqlite",
-    database: "photos.sqlite",
+    type: "postgres",
+    host: "db",
+    port: 5432,
+    username: env.POSTGRES_USER,
+    password: env.POSTGRES_PASSWORD,
+    database: env.POSTGRES_DB,
     entities: [PhotoEntity],
     synchronize: true
   });
@@ -78,7 +82,14 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
       if (photo === null) {
         throw { statusCode: 400, message: "Ceci n'est pas un identifiant de photo valide." };
       }
-      const { newSource, newSubjects } = photosPatchSchema.parse(req.body);
+      const { newName, newSource, newSubjects } = photosPatchSchema.parse(req.body);
+      if (newName !== undefined) {
+        if (await repository.findOneBy({ name: newName }) === null) {
+          photo.name = newName;
+        } else {
+          throw { statusCode: 400, message: "Une photo existe déjà avec ce nom." };
+        }
+      }
       if (newSource !== undefined) {
         if (env.SOURCES.includes(newSource)) {
           photo.source = newSource;

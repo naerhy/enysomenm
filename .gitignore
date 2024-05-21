@@ -3,5 +3,4 @@ node_modules
 static
 
 .env
-photos.sqlite
 requests.http

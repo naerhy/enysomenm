@@ -21,7 +21,10 @@ export const envSchema = z.object({
       return z.NEVER;
     }
     return arraySubjects;
-  })
+  }),
+  POSTGRES_USER: z.string().min(1),
+  POSTGRES_PASSWORD: z.string().min(5),
+  POSTGRES_DB: z.string().min(2)
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -33,6 +36,7 @@ export const authPostSchema = z.object({
 export const idSchema = z.number();
 
 export const photosPatchSchema = z.object({
+  newName: z.optional(z.string()),
   newSource: z.optional(z.string()),
   newSubjects: z.optional(z.array(z.string()))
 });

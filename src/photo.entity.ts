@@ -8,7 +8,7 @@ export class PhotoEntity {
   @Column()
   name: string;
 
-  @Column()
+  @Column({ type: "bigint" })
   timestamp: number;
 
   @Column()

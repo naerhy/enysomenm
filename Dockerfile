@@ -1,6 +1,6 @@
 FROM node:20-alpine
 
-RUN apk add dumb-init
+RUN apk add dumb-init perl
 
 WORKDIR /enysomenm
 
