@@ -5,6 +5,7 @@ import multer from "multer";
 import { DataSource } from "typeorm";
 import { PhotoEntity } from "../photo.entity";
 import { type Env, idSchema, photosPatchSchema } from "../schemas";
+import { ExifDateTime, exiftool } from "exiftool-vendored";
 
 const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) => {
   const dataSource = new DataSource({
@@ -54,9 +55,12 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
       if (!req.file) {
         throw { statusCode: 400, message: "Le fichier n'est pas défini, ou incorrect." };
       }
+      const url = path.join("photos", req.file.filename);
+      const tags = await exiftool.read(path.join(env.UPLOADS_DIR, url));
       const photo = new PhotoEntity();
       photo.name = req.file.filename;
-      photo.url = path.join("photos", photo.name);
+      photo.timestamp = tags.DateTimeOriginal instanceof ExifDateTime ? tags.DateTimeOriginal.toDate().getTime() : 0;
+      photo.url = url;
       photo.source = "";
       photo.subjects = "";
       await repository.save(photo);

@@ -9,6 +9,9 @@ export class PhotoEntity {
   name: string;
 
   @Column()
+  timestamp: number;
+
+  @Column()
   url: string;
 
   @Column()
