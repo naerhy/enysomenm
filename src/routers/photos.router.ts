@@ -6,6 +6,7 @@ import { DataSource } from "typeorm";
 import { PhotoEntity } from "../photo.entity";
 import { type Env, idSchema, photosPatchSchema } from "../schemas";
 import { ExifDateTime, exiftool } from "exiftool-vendored";
+import sharp from "sharp";
 
 const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) => {
   const dataSource = new DataSource({
@@ -65,8 +66,22 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
       photo.name = req.file.filename;
       photo.timestamp = tags.DateTimeOriginal instanceof ExifDateTime ? tags.DateTimeOriginal.toDate().getTime() : 0;
       photo.url = url;
+      photo.thumbnailURL = path.join("thumbnails", req.file.filename);
       photo.source = "";
       photo.subjects = "";
+      if (req.file.mimetype === "image/png") {
+        await sharp(path.join(env.UPLOADS_DIR, url))
+          .resize(800, 800, { fit: sharp.fit.outside })
+          .withMetadata()
+          .png({ quality: 75 })
+          .toFile(path.join(env.UPLOADS_DIR, photo.thumbnailURL));
+      } else {
+        await sharp(path.join(env.UPLOADS_DIR, url))
+          .resize(800, 800, { fit: sharp.fit.outside })
+          .withMetadata()
+          .jpeg({ quality: 75 })
+          .toFile(path.join(env.UPLOADS_DIR, photo.thumbnailURL));
+      }
       await repository.save(photo);
       console.log(`Photo ${photo.name} has been saved to database`);
       return res.json(transformPhotoSubjects(photo));

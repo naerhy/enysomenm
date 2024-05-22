@@ -15,6 +15,9 @@ export class PhotoEntity {
   url: string;
 
   @Column()
+  thumbnailURL: string;
+
+  @Column()
   source: string;
 
   @Column()
