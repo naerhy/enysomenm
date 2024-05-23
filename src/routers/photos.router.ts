@@ -56,10 +56,12 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
   });
 
   router.post("/", isAdminMiddleware, multerInstance.single("file"), async (req, res, next) => {
+    const created = { file: false, thumbnail: false };
     try {
       if (!req.file) {
         throw { statusCode: 400, message: "Le fichier n'est pas défini, ou incorrect." };
       }
+      created.file = true;
       const url = path.join("photos", req.file.filename);
       const tags = await exiftool.read(path.join(env.UPLOADS_DIR, url));
       const photo = new PhotoEntity();
@@ -82,10 +84,21 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
           .jpeg({ quality: 75 })
           .toFile(path.join(env.UPLOADS_DIR, photo.thumbnailURL));
       }
+      created.thumbnail = true;
       await repository.save(photo);
       console.log(`Photo ${photo.name} has been saved to database`);
       return res.json(transformPhotoSubjects(photo));
     } catch (err) {
+      try {
+        if (created.file) {
+          await unlink(path.join(env.UPLOADS_DIR, "photos", req.file!.filename));
+        }
+        if (created.thumbnail) {
+          await unlink(path.join(env.UPLOADS_DIR, "thumbnails", req.file!.filename));
+        }
+      } catch {
+        console.error(`Unable to delete ${req.file!.filename}, please delete manually`);
+      }
       next(err);
     }
   });
