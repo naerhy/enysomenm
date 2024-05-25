@@ -164,6 +164,8 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
       }
       await repository.remove(photo);
       await unlink(path.join(env.UPLOADS_DIR, photo.url));
+      await unlink(path.join(env.UPLOADS_DIR, photo.thumbnailURL));
+      await unlink(path.join(env.UPLOADS_DIR, "compressed", photo.name));
       res.json(photo);
     } catch (err) {
       next(err);
