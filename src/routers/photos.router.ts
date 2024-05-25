@@ -8,6 +8,12 @@ import { type Env, idSchema, photosPatchSchema } from "../schemas";
 import { ExifDateTime, exiftool } from "exiftool-vendored";
 import sharp from "sharp";
 
+interface ImgOptions {
+  width: number;
+  height: number;
+  quality: number;
+}
+
 const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) => {
   const dataSource = new DataSource({
     type: "postgres",
@@ -32,7 +38,7 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
       }
     }),
     fileFilter: async (_req, file, cb) => {
-      if (!["image/jpeg", "image/png"].includes(file.mimetype)) {
+      if (file.mimetype !== "image/jpeg") {
         return cb(null, false);
       }
       const existingfile = await repository.findOneBy({ name: file.originalname });
@@ -42,6 +48,21 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
 
   const transformPhotoSubjects = (photo: PhotoEntity) => {
     return { ...photo, subjects: photo.subjects === "" ? [] : photo.subjects.split(",") };
+  };
+
+  const createImage = async (imagePath: string, saveTo: string, options: ImgOptions) => {
+    const sharpImg = sharp(imagePath);
+    const metadata = await sharpImg.metadata();
+    // only resize if images is larger than dimensions in options
+    const dimensions: Pick<ImgOptions, "width" | "height"> = {
+      width: metadata.width && metadata.width < options.width ? metadata.width : options.width,
+      height: metadata.height && metadata.height < options.height ? metadata.height : options.height
+    };
+    await sharpImg
+      .resize(dimensions.width, dimensions.height, { fit: sharp.fit.outside })
+      .withMetadata()
+      .jpeg({ quality: options.quality })
+      .toFile(saveTo);
   };
 
   const router = express.Router();
@@ -56,12 +77,12 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
   });
 
   router.post("/", isAdminMiddleware, multerInstance.single("file"), async (req, res, next) => {
-    const created = { file: false, thumbnail: false };
+    const createdFiles: string[] = [];
     try {
       if (!req.file) {
         throw { statusCode: 400, message: "Le fichier n'est pas défini, ou incorrect." };
       }
-      created.file = true;
+      createdFiles.push(path.join(env.UPLOADS_DIR, "photos", req.file.filename));
       const url = path.join("photos", req.file.filename);
       const tags = await exiftool.read(path.join(env.UPLOADS_DIR, url));
       const photo = new PhotoEntity();
@@ -71,33 +92,28 @@ const createPhotosRouter = async (env: Env, isAdminMiddleware: RequestHandler) =
       photo.thumbnailURL = path.join("thumbnails", req.file.filename);
       photo.source = "";
       photo.subjects = "";
-      if (req.file.mimetype === "image/png") {
-        await sharp(path.join(env.UPLOADS_DIR, url))
-          .resize(800, 800, { fit: sharp.fit.outside })
-          .withMetadata()
-          .png({ quality: 75 })
-          .toFile(path.join(env.UPLOADS_DIR, photo.thumbnailURL));
-      } else {
-        await sharp(path.join(env.UPLOADS_DIR, url))
-          .resize(800, 800, { fit: sharp.fit.outside })
-          .withMetadata()
-          .jpeg({ quality: 75 })
-          .toFile(path.join(env.UPLOADS_DIR, photo.thumbnailURL));
-      }
-      created.thumbnail = true;
+      await createImage(
+        path.join(env.UPLOADS_DIR, url),
+        path.join(env.UPLOADS_DIR, photo.thumbnailURL),
+        { width: 800, height: 800, quality: 60 }
+      );
+      createdFiles.push(path.join(env.UPLOADS_DIR, "thumbnails", req.file.filename));
+      await createImage(
+        path.join(env.UPLOADS_DIR, url),
+        path.join(env.UPLOADS_DIR, "compressed", photo.name),
+        { width: 2000, height: 2000, quality: 75 }
+      );
+      createdFiles.push(path.join(env.UPLOADS_DIR, "compressed", req.file.filename));
       await repository.save(photo);
       console.log(`Photo ${photo.name} has been saved to database`);
       return res.json(transformPhotoSubjects(photo));
     } catch (err) {
       try {
-        if (created.file) {
-          await unlink(path.join(env.UPLOADS_DIR, "photos", req.file!.filename));
-        }
-        if (created.thumbnail) {
-          await unlink(path.join(env.UPLOADS_DIR, "thumbnails", req.file!.filename));
+        for (const file of createdFiles) {
+          await unlink(file);
         }
       } catch {
-        console.error(`Unable to delete ${req.file!.filename}, please delete manually`);
+        console.error(`Unable to delete [${createdFiles.join(", ")}], please delete manually`);
       }
       next(err);
     }

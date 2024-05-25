@@ -32,7 +32,7 @@ class App {
     if (!fs.existsSync(this.env.UPLOADS_DIR)) {
       throw new Error(`Directory ${this.env.UPLOADS_DIR} does not exist`);
     }
-    for (const dir of ["photos", "thumbnails"]) {
+    for (const dir of ["photos", "compressed", "thumbnails"]) {
       const fullPath = path.join(this.env.UPLOADS_DIR, dir);
       if (!fs.existsSync(fullPath)) {
         fs.mkdirSync(fullPath);
