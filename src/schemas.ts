@@ -40,3 +40,8 @@ export const photosPatchSchema = z.object({
   newSource: z.optional(z.string()),
   newSubjects: z.optional(z.array(z.string()))
 });
+
+export const zipPostSchema = z.object({
+  filenames: z.array(z.string()),
+  name: z.string()
+});
