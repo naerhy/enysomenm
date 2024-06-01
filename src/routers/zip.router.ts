@@ -11,8 +11,10 @@ const createZipRouter = (env: Env) => {
 
   router.post("/", async (req, res, next) => {
     try {
-      const { filenames, name } = zipPostSchema.parse(req.body);
-      const fullPath = path.join(env.UPLOADS_DIR, "zips", `${name}.zip`);
+      const { filenames } = zipPostSchema.parse(req.body);
+      // https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
+      const filename = (Math.random() + 1).toString(36).substring(7) + ".zip";
+      const fullPath = path.join(env.UPLOADS_DIR, "zips", filename);
       const output = fs.createWriteStream(fullPath);
       const archive = archiver("zip", { zlib: { level: 9 } });
       let error: Error | null = null;
@@ -25,7 +27,7 @@ const createZipRouter = (env: Env) => {
           });
           next(error);
         } else {
-          res.json({ name: `${name}.zip` });
+          res.json({ name: filename });
         }
       });
       archive.on("error", (err) => {
